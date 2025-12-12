@@ -312,12 +312,22 @@ const elements = {
 // Initialize Game
 function initGame() {
     loadGameState();
+    
+    // Ensure energy is valid after loading
+    const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+    if (typeof gameState.energy !== 'number' || isNaN(gameState.energy)) {
+        gameState.energy = maxEnergy;
+    }
+    gameState.energy = Math.max(0, Math.min(maxEnergy, gameState.energy));
+    
     updateUI();
     checkInsightUnlocks();
     
-    // Ensure energy warning modal is hidden on initialization
+    // Force hide energy warning modal on initialization - it should never show on load
     if (elements.energyWarningModal) {
         elements.energyWarningModal.classList.add('hidden');
+        // Also set display style to ensure it's hidden
+        elements.energyWarningModal.style.display = 'none';
     }
     
     // If there's a current case, restore it properly
@@ -326,34 +336,58 @@ function initGame() {
         elements.caseTitle.innerHTML = `${gameState.currentCase.title} <span class="difficulty-badge difficulty-${gameState.currentCase.difficulty}">${gameState.currentCase.difficulty.toUpperCase()}</span>`;
         elements.caseContent.innerHTML = `<p>${gameState.currentCase.description}</p>`;
     }
+    
+    // Save state after initialization to ensure energy is persisted correctly
+    saveGameState();
 }
 
 // Load Game State from LocalStorage
 function loadGameState() {
     const saved = localStorage.getItem('lawPracticeGameState');
     if (saved) {
-        Object.assign(gameState, JSON.parse(saved));
-        
-        // Validate and fix energy on load
-        const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
-        if (gameState.energy < 0) {
-            gameState.energy = 0;
-        }
-        if (gameState.energy > maxEnergy) {
-            gameState.energy = maxEnergy;
-        }
-        
-        // Regenerate some energy when loading (player rested)
-        if (gameState.energy < maxEnergy) {
-            let energyRegen = 30;
-            if (gameState.officeUpgrades.includes('plants')) {
-                energyRegen += 5;
+        try {
+            const loadedState = JSON.parse(saved);
+            Object.assign(gameState, loadedState);
+            
+            // Validate and fix energy on load
+            const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+            
+            // Ensure energy is a valid number
+            if (typeof gameState.energy !== 'number' || isNaN(gameState.energy)) {
+                gameState.energy = maxEnergy;
             }
-            if (gameState.officeUpgrades.includes('gym')) {
-                energyRegen += 10;
+            
+            if (gameState.energy < 0) {
+                gameState.energy = 0;
             }
-            gameState.energy = Math.min(maxEnergy, gameState.energy + energyRegen);
+            if (gameState.energy > maxEnergy) {
+                gameState.energy = maxEnergy;
+            }
+            
+            // Regenerate some energy when loading (player rested) - but ensure minimum is reasonable
+            if (gameState.energy < maxEnergy) {
+                let energyRegen = 30;
+                if (gameState.officeUpgrades && gameState.officeUpgrades.includes('plants')) {
+                    energyRegen += 5;
+                }
+                if (gameState.officeUpgrades && gameState.officeUpgrades.includes('gym')) {
+                    energyRegen += 10;
+                }
+                gameState.energy = Math.min(maxEnergy, gameState.energy + energyRegen);
+            }
+            
+            // If energy is still 0 or very low after regeneration, set to a reasonable minimum
+            if (gameState.energy < 20) {
+                gameState.energy = Math.min(maxEnergy, 50); // Start with at least 50 energy
+            }
+        } catch (e) {
+            console.error('Error loading game state:', e);
+            // Reset to default if loading fails
+            gameState.energy = 100;
         }
+    } else {
+        // No saved state - ensure energy is set to default
+        gameState.energy = 100;
     }
 }
 
@@ -437,15 +471,22 @@ function takeNewCase() {
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
     const requiredEnergy = 20;
     
-    // Ensure energy is within bounds
-    if (gameState.energy < 0) {
+    // Ensure energy is within bounds and get current value
+    let currentEnergy = gameState.energy || 0;
+    if (currentEnergy < 0) {
+        currentEnergy = 0;
         gameState.energy = 0;
     }
-    if (gameState.energy > maxEnergy) {
+    if (currentEnergy > maxEnergy) {
+        currentEnergy = maxEnergy;
         gameState.energy = maxEnergy;
     }
     
-    if (gameState.energy < requiredEnergy) {
+    // Update UI to reflect current state before checking
+    updateUI();
+    
+    // Only show warning if energy is actually insufficient
+    if (currentEnergy < requiredEnergy) {
         showEnergyWarning();
         return;
     }
@@ -953,14 +994,38 @@ function showOutcome(decision, won, earnings) {
 
 // Show Energy Warning
 function showEnergyWarning() {
+    // Ensure we're using the current energy value from gameState
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+    let currentEnergy = gameState.energy;
+    
+    // Validate energy value
+    if (typeof currentEnergy !== 'number' || isNaN(currentEnergy)) {
+        currentEnergy = maxEnergy;
+        gameState.energy = maxEnergy;
+    }
+    currentEnergy = Math.max(0, Math.min(maxEnergy, currentEnergy));
+    
+    // Update UI first to ensure consistency
+    updateUI();
+    
+    // Only show modal if energy is actually insufficient
+    if (currentEnergy >= 20) {
+        // Energy is sufficient, don't show warning
+        if (elements.energyWarningModal) {
+            elements.energyWarningModal.classList.add('hidden');
+            elements.energyWarningModal.style.display = 'none';
+        }
+        return;
+    }
+    
     if (elements.currentEnergyDisplay) {
-        elements.currentEnergyDisplay.textContent = gameState.energy;
+        elements.currentEnergyDisplay.textContent = currentEnergy;
     }
     if (elements.maxEnergyDisplay) {
         elements.maxEnergyDisplay.textContent = maxEnergy;
     }
     if (elements.energyWarningModal) {
+        elements.energyWarningModal.style.display = 'flex'; // Use flex to show modal
         elements.energyWarningModal.classList.remove('hidden');
     }
 }
@@ -1627,6 +1692,7 @@ if (elements.closeEnergyWarningBtn) {
     elements.closeEnergyWarningBtn.addEventListener('click', () => {
         if (elements.energyWarningModal) {
             elements.energyWarningModal.classList.add('hidden');
+            elements.energyWarningModal.style.display = 'none';
         }
     });
     
@@ -1635,10 +1701,33 @@ if (elements.closeEnergyWarningBtn) {
         elements.energyWarningModal.addEventListener('click', (e) => {
             if (e.target === elements.energyWarningModal) {
                 elements.energyWarningModal.classList.add('hidden');
+                elements.energyWarningModal.style.display = 'none';
             }
         });
     }
 }
+
+// Ensure modal is hidden on page load (run immediately)
+document.addEventListener('DOMContentLoaded', () => {
+    const energyModal = document.getElementById('energy-warning-modal');
+    if (energyModal) {
+        energyModal.classList.add('hidden');
+        energyModal.style.display = 'none';
+    }
+});
+
+// Also ensure it's hidden after a short delay (in case of timing issues)
+setTimeout(() => {
+    const energyModal = document.getElementById('energy-warning-modal');
+    if (energyModal && !energyModal.classList.contains('hidden')) {
+        // Only hide if energy is actually sufficient
+        const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+        if (gameState.energy >= 20) {
+            energyModal.classList.add('hidden');
+            energyModal.style.display = 'none';
+        }
+    }
+}, 100);
 
 elements.officeBtn.addEventListener('click', showOffice);
 elements.closeOfficeBtn.addEventListener('click', () => {
