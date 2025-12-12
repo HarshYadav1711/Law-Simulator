@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law Practice Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen active">
+            <div class="menu-content">
+                <h1 class="game-title">Law Practice Simulator</h1>
+                <p class="game-subtitle">Build your reputation. Fight for justice.</p>
+                <button id="start-game-btn" class="btn btn-primary">Start New Game</button>
+                <button id="continue-game-btn" class="btn btn-secondary">Continue Game</button>
+                <button id="tutorial-menu-btn" class="btn btn-secondary">📚 Tutorial</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- Header -->
+            <header class="game-header">
+                <div class="player-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Reputation:</span>
+                        <span id="reputation-value" class="stat-value">50</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Cases Won:</span>
+                        <span id="cases-won-value" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Level:</span>
+                        <span id="level-value" class="stat-value">1</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">💰 Money:</span>
+                        <span id="money-value" class="stat-value">$5000</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">⚡ Energy:</span>
+                        <span id="energy-value" class="stat-value">100</span>
+                    </div>
+                </div>
+                <div class="psychology-insights">
+                    <span class="insights-label">Psychology Insights:</span>
+                    <div id="insights-container" class="insights-list"></div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="game-main">
+                <!-- Story Panel -->
+                <div id="story-panel" class="panel story-panel">
+                    <h2>Your Journey</h2>
+                    <div id="story-content" class="story-content">
+                        <p>Welcome to your law practice! You're a young criminal lawyer ready to make a difference. Every case you take, every decision you make, shapes your path toward justice.</p>
+                    </div>
+                </div>
+
+                <!-- Case Panel -->
+                <div id="case-panel" class="panel case-panel">
+                    <h2 id="case-title">No Active Case</h2>
+                    <div id="case-content" class="case-content">
+                        <p>Click "Take New Case" to start your first case.</p>
+                    </div>
+                    <div id="case-actions" class="case-actions"></div>
+                </div>
+
+                <!-- Decision Panel -->
+                <div id="decision-panel" class="panel decision-panel hidden">
+                    <h2>Make Your Decision</h2>
+                    <div id="decision-content" class="decision-content"></div>
+                    <div id="decision-options" class="decision-options"></div>
+                </div>
+
+                <!-- Case Phase Indicator -->
+                <div id="phase-indicator" class="phase-indicator hidden">
+                    <div class="phase-step active" data-phase="client">1. Client Meeting</div>
+                    <div class="phase-step" data-phase="investigation">2. Investigation</div>
+                    <div class="phase-step" data-phase="preparation">3. Preparation</div>
+                    <div class="phase-step" data-phase="trial">4. Trial</div>
+                    <div class="phase-step" data-phase="decision">5. Decision</div>
+                </div>
+
+                <!-- Client Interaction Panel -->
+                <div id="client-panel" class="panel client-panel hidden">
+                    <h2>Client Meeting</h2>
+                    <div id="client-dialogue" class="client-dialogue"></div>
+                    <div id="client-options" class="dialogue-options"></div>
+                </div>
+
+                <!-- Investigation Panel -->
+                <div id="investigation-panel" class="panel investigation-panel hidden">
+                    <h2>Investigation Phase</h2>
+                    <div id="investigation-content" class="investigation-content">
+                        <p>Search for evidence to strengthen your case. Click on locations to investigate.</p>
+                    </div>
+                    <div id="investigation-locations" class="investigation-locations"></div>
+                    <div id="collected-evidence" class="collected-evidence">
+                        <h3>Collected Evidence:</h3>
+                        <div id="evidence-list" class="evidence-list"></div>
+                    </div>
+                </div>
+
+                <!-- Preparation Panel -->
+                <div id="preparation-panel" class="panel preparation-panel hidden">
+                    <h2>Case Preparation</h2>
+                    <div id="preparation-content" class="preparation-content">
+                        <p>Review your evidence and prepare your strategy.</p>
+                    </div>
+                    <div id="strategy-options" class="strategy-options"></div>
+                </div>
+
+                <!-- Courtroom Panel -->
+                <div id="courtroom-panel" class="panel courtroom-panel hidden">
+                    <h2>Courtroom Trial</h2>
+                    <div id="courtroom-scene" class="courtroom-scene">
+                        <div class="courtroom-header">
+                            <div class="courtroom-participant">
+                                <span class="participant-label">Judge:</span>
+                                <span id="judge-text" class="participant-text">Court is now in session.</span>
+                            </div>
+                            <div class="courtroom-participant">
+                                <span class="participant-label">Prosecutor:</span>
+                                <span id="prosecutor-text" class="participant-text"></span>
+                            </div>
+                            <div class="courtroom-participant">
+                                <span class="participant-label">Witness:</span>
+                                <span id="witness-text" class="participant-text"></span>
+                            </div>
+                        </div>
+                        <div id="courtroom-actions" class="courtroom-actions"></div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="take-case-btn" class="btn btn-primary">Take New Case</button>
+                    <button id="use-insight-btn" class="btn btn-secondary" disabled>Use Psychology Insight</button>
+                    <button id="office-btn" class="btn btn-secondary">My Office</button>
+                    <button id="achievements-btn" class="btn btn-secondary">Achievements</button>
+                    <button id="tutorial-btn" class="btn btn-secondary">📚 Tutorial</button>
+                </div>
+            </main>
+
+            <!-- Outcome Modal -->
+            <div id="outcome-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 id="outcome-title"></h2>
+                    <p id="outcome-text"></p>
+                    <div id="outcome-effects"></div>
+                    <button id="close-outcome-btn" class="btn btn-primary">Continue</button>
+                </div>
+            </div>
+
+            <!-- Insight Unlock Modal -->
+            <div id="insight-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>🎉 New Psychology Insight Unlocked!</h2>
+                    <p id="insight-name" class="insight-name"></p>
+                    <p id="insight-description" class="insight-description"></p>
+                    <button id="close-insight-btn" class="btn btn-primary">Got it!</button>
+                </div>
+            </div>
+
+            <!-- Office Modal -->
+            <div id="office-modal" class="modal hidden">
+                <div class="modal-content office-modal-content">
+                    <h2>My Law Office</h2>
+                    <div class="office-stats">
+                        <div class="office-stat">
+                            <span>Firm Size:</span>
+                            <span id="firm-size">Solo Practice</span>
+                        </div>
+                        <div class="office-stat">
+                            <span>Monthly Expenses:</span>
+                            <span id="monthly-expenses">$500</span>
+                        </div>
+                        <div class="office-stat">
+                            <span>Client Satisfaction:</span>
+                            <span id="client-satisfaction">75%</span>
+                        </div>
+                    </div>
+                    <div class="office-upgrades">
+                        <h3>Office Upgrades</h3>
+                        <div id="upgrades-list" class="upgrades-list"></div>
+                    </div>
+                    <button id="close-office-btn" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+
+            <!-- Achievements Modal -->
+            <div id="achievements-modal" class="modal hidden">
+                <div class="modal-content achievements-modal-content">
+                    <h2>🏆 Achievements</h2>
+                    <div id="achievements-list" class="achievements-list"></div>
+                    <button id="close-achievements-btn" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+
+            <!-- Tutorial Modal -->
+            <div id="tutorial-modal" class="modal hidden">
+                <div class="modal-content tutorial-modal-content">
+                    <div class="tutorial-header">
+                        <h2>📚 Game Tutorial</h2>
+                        <button id="close-tutorial-btn" class="btn btn-secondary">Close</button>
+                    </div>
+                    <div class="tutorial-navigation">
+                        <button class="tutorial-nav-btn active" data-section="basics">Basics</button>
+                        <button class="tutorial-nav-btn" data-section="cases">Cases</button>
+                        <button class="tutorial-nav-btn" data-section="resources">Resources</button>
+                        <button class="tutorial-nav-btn" data-section="office">Office</button>
+                        <button class="tutorial-nav-btn" data-section="insights">Insights</button>
+                        <button class="tutorial-nav-btn" data-section="achievements">Achievements</button>
+                    </div>
+                    <div class="tutorial-content">
+                        <div id="tutorial-basics" class="tutorial-section active">
+                            <h3>🎮 Getting Started</h3>
+                            <div class="tutorial-item">
+                                <h4>Welcome to Law Practice Simulator!</h4>
+                                <p>You play as a young criminal lawyer building your practice. Your goal is to win cases, build your reputation, and make a difference in the justice system.</p>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Main Stats</h4>
+                                <ul>
+                                    <li><strong>Reputation:</strong> Your standing in the legal community (0-100). Higher reputation unlocks better cases.</li>
+                                    <li><strong>Money:</strong> Earn from winning cases. Spend on office upgrades.</li>
+                                    <li><strong>Energy:</strong> Required for investigations. Regenerates after cases.</li>
+                                    <li><strong>Level:</strong> Increases as you win cases. Unlocks harder cases.</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Core Values</h4>
+                                <ul>
+                                    <li><strong>Ethics Score:</strong> Your commitment to ethical practice</li>
+                                    <li><strong>Justice Score:</strong> Your dedication to true justice</li>
+                                    <li><strong>Kindness Score:</strong> Your compassion for clients</li>
+                                </ul>
+                                <p>These scores unlock special psychology insights and affect your story path.</p>
+                            </div>
+                        </div>
+
+                        <div id="tutorial-cases" class="tutorial-section">
+                            <h3>⚖️ Case System</h3>
+                            <div class="tutorial-item">
+                                <h4>Case Phases</h4>
+                                <p>Each case has 5 phases you must complete:</p>
+                                <ol>
+                                    <li><strong>Client Meeting:</strong> Talk to your client. Your responses affect client satisfaction and case outcomes.</li>
+                                    <li><strong>Investigation:</strong> Search locations to collect evidence. Costs energy but strengthens your case.</li>
+                                    <li><strong>Preparation:</strong> Choose your defense strategy based on collected evidence.</li>
+                                    <li><strong>Trial:</strong> Present evidence, cross-examine witnesses, and make closing statements.</li>
+                                    <li><strong>Decision:</strong> Make the final choice that determines the case outcome.</li>
+                                </ol>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Case Difficulty</h4>
+                                <ul>
+                                    <li><strong>Easy:</strong> Available from level 1. Good for learning the game.</li>
+                                    <li><strong>Medium:</strong> Available from level 2. More challenging decisions.</li>
+                                    <li><strong>Hard:</strong> Available from level 3. Complex cases with high stakes.</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Making Decisions</h4>
+                                <p>Every decision affects your stats differently. Consider:</p>
+                                <ul>
+                                    <li>Ethical choices (green border) often boost ethics and justice scores</li>
+                                    <li>Some decisions increase reputation but may lower ethics</li>
+                                    <li>Balance short-term gains with long-term values</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="tutorial-resources" class="tutorial-section">
+                            <h3>💰 Resource Management</h3>
+                            <div class="tutorial-item">
+                                <h4>Money</h4>
+                                <ul>
+                                    <li>Earn money by winning cases (base reward + evidence bonus)</li>
+                                    <li>Spend on office upgrades to improve your practice</li>
+                                    <li>Higher difficulty cases offer better rewards</li>
+                                    <li>Monthly expenses reduce your income</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Energy</h4>
+                                <ul>
+                                    <li>Required for investigations and taking new cases</li>
+                                    <li>Each investigation location costs 10-20 energy</li>
+                                    <li>Regenerates after completing cases</li>
+                                    <li>Office upgrades can increase max energy and regeneration</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Client Satisfaction</h4>
+                                <ul>
+                                    <li>Affects case outcomes and reputation</li>
+                                    <li>Improved by office upgrades and good client interactions</li>
+                                    <li>High satisfaction leads to better referrals</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="tutorial-office" class="tutorial-section">
+                            <h3>🏢 Office Management</h3>
+                            <div class="tutorial-item">
+                                <h4>Upgrading Your Office</h4>
+                                <p>Click "My Office" to view and purchase upgrades. Upgrades are organized by category:</p>
+                                <ul>
+                                    <li><strong>Staff & Personnel:</strong> Hire assistants, paralegals, or partners</li>
+                                    <li><strong>Facilities:</strong> Improve your office space (library, conference room, etc.)</li>
+                                    <li><strong>Equipment:</strong> Technology and tools to improve efficiency</li>
+                                    <li><strong>Decorations:</strong> Aesthetic improvements that boost client satisfaction</li>
+                                    <li><strong>Services:</strong> Premium services for clients</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Upgrade Benefits</h4>
+                                <ul>
+                                    <li>Reduce energy costs for investigations</li>
+                                    <li>Increase reputation gain from cases</li>
+                                    <li>Boost client satisfaction</li>
+                                    <li>Increase maximum energy capacity</li>
+                                    <li>Improve evidence collection</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Firm Growth</h4>
+                                <p>Your firm size changes as you level up and purchase upgrades:</p>
+                                <ul>
+                                    <li><strong>Solo Practice:</strong> Starting level</li>
+                                    <li><strong>Small Firm:</strong> Level 3+</li>
+                                    <li><strong>Partnership:</strong> Level 7+ or with Law Partner upgrade</li>
+                                    <li><strong>Elite Law Firm:</strong> Level 10+ or with Penthouse Office</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="tutorial-insights" class="tutorial-section">
+                            <h3>🧠 Psychology Insights</h3>
+                            <div class="tutorial-item">
+                                <h4>What Are Psychology Insights?</h4>
+                                <p>Special abilities you unlock as you progress. These power-ups give you advantages during cases.</p>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>How to Unlock</h4>
+                                <ul>
+                                    <li><strong>Body Language Reading:</strong> Win 2 cases</li>
+                                    <li><strong>Jury Persuasion:</strong> Win 4 cases</li>
+                                    <li><strong>Client Calming:</strong> Reach 20 kindness score</li>
+                                    <li><strong>Ethical Clarity:</strong> Reach 30 ethics score</li>
+                                    <li><strong>Truth Detection:</strong> Reach 40 justice score</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Using Insights</h4>
+                                <p>Click "Use Psychology Insight" during a case to activate special abilities:</p>
+                                <ul>
+                                    <li>Gain bonus reputation</li>
+                                    <li>Reveal hidden information</li>
+                                    <li>Improve case outcomes</li>
+                                    <li>Boost your core values</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div id="tutorial-achievements" class="tutorial-section">
+                            <h3>🏆 Achievements</h3>
+                            <div class="tutorial-item">
+                                <h4>What Are Achievements?</h4>
+                                <p>Milestones you unlock by reaching specific goals. There are 20 achievements to discover!</p>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Types of Achievements</h4>
+                                <ul>
+                                    <li><strong>Progress:</strong> Win cases, reach levels, collect evidence</li>
+                                    <li><strong>Stats:</strong> Reach high scores in reputation, ethics, justice, kindness</li>
+                                    <li><strong>Wealth:</strong> Accumulate money</li>
+                                    <li><strong>Mastery:</strong> Complete special challenges</li>
+                                    <li><strong>Collection:</strong> Unlock all insights, buy all upgrades</li>
+                                </ul>
+                            </div>
+                            <div class="tutorial-item">
+                                <h4>Viewing Achievements</h4>
+                                <p>Click "Achievements" anytime to see your progress. Unlocked achievements are highlighted in gold!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tutorial-footer">
+                        <button id="prev-tutorial-btn" class="btn btn-secondary">← Previous</button>
+                        <span id="tutorial-page-indicator">1 / 6</span>
+                        <button id="next-tutorial-btn" class="btn btn-secondary">Next →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+
