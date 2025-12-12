@@ -302,7 +302,11 @@ const elements = {
     closeTutorialBtn: document.getElementById('close-tutorial-btn'),
     prevTutorialBtn: document.getElementById('prev-tutorial-btn'),
     nextTutorialBtn: document.getElementById('next-tutorial-btn'),
-    tutorialPageIndicator: document.getElementById('tutorial-page-indicator')
+    tutorialPageIndicator: document.getElementById('tutorial-page-indicator'),
+    energyWarningModal: document.getElementById('energy-warning-modal'),
+    currentEnergyDisplay: document.getElementById('current-energy-display'),
+    maxEnergyDisplay: document.getElementById('max-energy-display'),
+    closeEnergyWarningBtn: document.getElementById('close-energy-warning-btn')
 };
 
 // Initialize Game
@@ -310,6 +314,18 @@ function initGame() {
     loadGameState();
     updateUI();
     checkInsightUnlocks();
+    
+    // Ensure energy warning modal is hidden on initialization
+    if (elements.energyWarningModal) {
+        elements.energyWarningModal.classList.add('hidden');
+    }
+    
+    // If there's a current case, restore it properly
+    if (gameState.currentCase) {
+        // Restore case display if case was in progress
+        elements.caseTitle.innerHTML = `${gameState.currentCase.title} <span class="difficulty-badge difficulty-${gameState.currentCase.difficulty}">${gameState.currentCase.difficulty.toUpperCase()}</span>`;
+        elements.caseContent.innerHTML = `<p>${gameState.currentCase.description}</p>`;
+    }
 }
 
 // Load Game State from LocalStorage
@@ -317,6 +333,27 @@ function loadGameState() {
     const saved = localStorage.getItem('lawPracticeGameState');
     if (saved) {
         Object.assign(gameState, JSON.parse(saved));
+        
+        // Validate and fix energy on load
+        const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+        if (gameState.energy < 0) {
+            gameState.energy = 0;
+        }
+        if (gameState.energy > maxEnergy) {
+            gameState.energy = maxEnergy;
+        }
+        
+        // Regenerate some energy when loading (player rested)
+        if (gameState.energy < maxEnergy) {
+            let energyRegen = 30;
+            if (gameState.officeUpgrades.includes('plants')) {
+                energyRegen += 5;
+            }
+            if (gameState.officeUpgrades.includes('gym')) {
+                energyRegen += 10;
+            }
+            gameState.energy = Math.min(maxEnergy, gameState.energy + energyRegen);
+        }
     }
 }
 
@@ -400,8 +437,16 @@ function takeNewCase() {
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
     const requiredEnergy = 20;
     
+    // Ensure energy is within bounds
+    if (gameState.energy < 0) {
+        gameState.energy = 0;
+    }
+    if (gameState.energy > maxEnergy) {
+        gameState.energy = maxEnergy;
+    }
+    
     if (gameState.energy < requiredEnergy) {
-        alert("You're too tired! Rest to regain energy.");
+        showEnergyWarning();
         return;
     }
     
@@ -904,6 +949,20 @@ function showOutcome(decision, won, earnings) {
     });
     
     elements.outcomeModal.classList.remove('hidden');
+}
+
+// Show Energy Warning
+function showEnergyWarning() {
+    const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
+    if (elements.currentEnergyDisplay) {
+        elements.currentEnergyDisplay.textContent = gameState.energy;
+    }
+    if (elements.maxEnergyDisplay) {
+        elements.maxEnergyDisplay.textContent = maxEnergy;
+    }
+    if (elements.energyWarningModal) {
+        elements.energyWarningModal.classList.remove('hidden');
+    }
 }
 
 // Use Psychology Insight
@@ -1563,6 +1622,23 @@ elements.closeOutcomeBtn.addEventListener('click', () => {
 elements.closeInsightBtn.addEventListener('click', () => {
     elements.insightModal.classList.add('hidden');
 });
+
+if (elements.closeEnergyWarningBtn) {
+    elements.closeEnergyWarningBtn.addEventListener('click', () => {
+        if (elements.energyWarningModal) {
+            elements.energyWarningModal.classList.add('hidden');
+        }
+    });
+    
+    // Close modal when clicking outside
+    if (elements.energyWarningModal) {
+        elements.energyWarningModal.addEventListener('click', (e) => {
+            if (e.target === elements.energyWarningModal) {
+                elements.energyWarningModal.classList.add('hidden');
+            }
+        });
+    }
+}
 
 elements.officeBtn.addEventListener('click', showOffice);
 elements.closeOfficeBtn.addEventListener('click', () => {

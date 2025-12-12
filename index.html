@@ -167,6 +167,17 @@
                 </div>
             </div>
 
+            <!-- Energy Warning Modal -->
+            <div id="energy-warning-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>⚡ Low Energy</h2>
+                    <p>You're too tired to take on a new case right now. Complete your current case or wait to regain energy.</p>
+                    <p style="margin-top: 15px; color: #666; font-size: 0.95em;">Current Energy: <strong id="current-energy-display">0</strong> / <strong id="max-energy-display">100</strong></p>
+                    <p style="color: #666; font-size: 0.95em;">Required: <strong>20</strong> energy</p>
+                    <button id="close-energy-warning-btn" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+
             <!-- Office Modal -->
             <div id="office-modal" class="modal hidden">
                 <div class="modal-content office-modal-content">
