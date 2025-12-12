@@ -468,11 +468,22 @@ function unlockInsight(insight) {
 
 // Take New Case
 function takeNewCase() {
+    // Prevent multiple rapid clicks
+    if (gameState.currentCase && gameState.currentCase.phase) {
+        // Case already in progress, don't start a new one
+        return;
+    }
+    
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
     const requiredEnergy = 20;
     
+    // Ensure energy is a valid number
+    if (typeof gameState.energy !== 'number' || isNaN(gameState.energy)) {
+        gameState.energy = maxEnergy;
+    }
+    
     // Ensure energy is within bounds and get current value
-    let currentEnergy = gameState.energy || 0;
+    let currentEnergy = gameState.energy;
     if (currentEnergy < 0) {
         currentEnergy = 0;
         gameState.energy = 0;
@@ -515,20 +526,42 @@ function takeNewCase() {
     
     // Apply energy cost (reduced by upgrades)
     let energyCost = 20;
-    if (gameState.officeUpgrades.includes('assistant')) {
+    if (gameState.officeUpgrades && gameState.officeUpgrades.includes('assistant')) {
         energyCost = Math.floor(energyCost * 0.9);
     }
-    if (gameState.officeUpgrades.includes('paralegal')) {
+    if (gameState.officeUpgrades && gameState.officeUpgrades.includes('paralegal')) {
         energyCost = Math.floor(energyCost * 0.7);
     }
     
+    // Deduct energy
     gameState.energy -= energyCost;
+    
+    // Ensure energy doesn't go below 0
+    if (gameState.energy < 0) {
+        gameState.energy = 0;
+    }
+    
+    // Update UI immediately after energy deduction
+    updateUI();
+    
+    // Save state
+    saveGameState();
     
     // Track case start time for quick win achievement
     gameState.caseStartTime = Date.now();
     
     // Start with client meeting phase
-    startClientMeeting();
+    try {
+        startClientMeeting();
+    } catch (error) {
+        console.error('Error starting client meeting:', error);
+        // If there's an error, restore energy and show error message
+        gameState.energy += energyCost;
+        updateUI();
+        saveGameState();
+        alert('An error occurred while starting the case. Please try again.');
+        return;
+    }
 }
 
 // Get Case Level
@@ -562,6 +595,12 @@ function showDecisions(decisions) {
 
 // Start Client Meeting Phase
 function startClientMeeting() {
+    // Validate that we have a current case
+    if (!gameState.currentCase) {
+        console.error('No current case to start');
+        return;
+    }
+    
     gameState.currentCase.phase = 'client';
     updatePhaseIndicator('client');
     
@@ -569,8 +608,12 @@ function startClientMeeting() {
     hideAllPanels();
     
     // Show client panel
-    elements.clientPanel.classList.remove('hidden');
-    elements.phaseIndicator.classList.remove('hidden');
+    if (elements.clientPanel) {
+        elements.clientPanel.classList.remove('hidden');
+    }
+    if (elements.phaseIndicator) {
+        elements.phaseIndicator.classList.remove('hidden');
+    }
     
     const dialogues = [
         "I'm so scared. I don't know what to do. Can you help me?",
@@ -579,19 +622,31 @@ function startClientMeeting() {
     ];
     
     const randomDialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
-    elements.clientDialogue.innerHTML = `<p><strong>Client:</strong> "${randomDialogue}"</p>`;
+    if (elements.clientDialogue) {
+        elements.clientDialogue.innerHTML = `<p><strong>Client:</strong> "${randomDialogue}"</p>`;
+    }
     
-    elements.clientOptions.innerHTML = `
-        <div class="dialogue-option" onclick="respondToClient('reassure')">
-            <strong>Reassure them:</strong> "I'm here to help. Let's work through this together."
-        </div>
-        <div class="dialogue-option" onclick="respondToClient('professional')">
-            <strong>Stay professional:</strong> "I understand. Let's discuss the facts of your case."
-        </div>
-        <div class="dialogue-option" onclick="respondToClient('direct')">
-            <strong>Be direct:</strong> "Tell me everything that happened. I need the full truth."
-        </div>
-    `;
+    if (elements.clientOptions) {
+        elements.clientOptions.innerHTML = `
+            <div class="dialogue-option" onclick="respondToClient('reassure')">
+                <strong>Reassure them:</strong> "I'm here to help. Let's work through this together."
+            </div>
+            <div class="dialogue-option" onclick="respondToClient('professional')">
+                <strong>Stay professional:</strong> "I understand. Let's discuss the facts of your case."
+            </div>
+            <div class="dialogue-option" onclick="respondToClient('direct')">
+                <strong>Be direct:</strong> "Tell me everything that happened. I need the full truth."
+            </div>
+        `;
+    }
+    
+    // Update case title and content to show active case
+    if (elements.caseTitle) {
+        elements.caseTitle.innerHTML = `${gameState.currentCase.title} <span class="difficulty-badge difficulty-${gameState.currentCase.difficulty}">${gameState.currentCase.difficulty.toUpperCase()}</span>`;
+    }
+    if (elements.caseContent) {
+        elements.caseContent.innerHTML = `<p>${gameState.currentCase.description}</p>`;
+    }
 }
 
 // Respond to Client
@@ -996,17 +1051,25 @@ function showOutcome(decision, won, earnings) {
 function showEnergyWarning() {
     // Ensure we're using the current energy value from gameState
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
-    let currentEnergy = gameState.energy;
     
-    // Validate energy value
+    // Validate energy value - get fresh value from gameState
+    let currentEnergy = gameState.energy;
     if (typeof currentEnergy !== 'number' || isNaN(currentEnergy)) {
         currentEnergy = maxEnergy;
         gameState.energy = maxEnergy;
     }
     currentEnergy = Math.max(0, Math.min(maxEnergy, currentEnergy));
     
-    // Update UI first to ensure consistency
+    // Update UI first to ensure consistency - this ensures the displayed energy matches
     updateUI();
+    
+    // Re-read energy from UI to ensure we have the correct value
+    // The UI should now show the correct value after updateUI()
+    const energyText = elements.energyValue ? elements.energyValue.textContent : `${currentEnergy}/${maxEnergy}`;
+    const energyMatch = energyText.match(/(\d+)\/(\d+)/);
+    if (energyMatch) {
+        currentEnergy = parseInt(energyMatch[1], 10);
+    }
     
     // Only show modal if energy is actually insufficient
     if (currentEnergy >= 20) {
