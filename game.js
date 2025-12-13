@@ -398,12 +398,20 @@ function saveGameState() {
 
 // Update UI
 function updateUI() {
-    elements.reputationValue.textContent = gameState.reputation;
-    elements.casesWonValue.textContent = gameState.casesWon;
-    elements.levelValue.textContent = gameState.level;
-    elements.moneyValue.textContent = `$${gameState.money.toLocaleString()}`;
+    // Ensure energy is valid before displaying
     const maxEnergy = 100 + (gameState.maxEnergyBonus || 0);
-    elements.energyValue.textContent = `${gameState.energy}/${maxEnergy}`;
+    if (typeof gameState.energy !== 'number' || isNaN(gameState.energy)) {
+        gameState.energy = maxEnergy;
+    }
+    gameState.energy = Math.max(0, Math.min(maxEnergy, gameState.energy));
+    
+    if (elements.reputationValue) elements.reputationValue.textContent = gameState.reputation;
+    if (elements.casesWonValue) elements.casesWonValue.textContent = gameState.casesWon;
+    if (elements.levelValue) elements.levelValue.textContent = gameState.level;
+    if (elements.moneyValue) elements.moneyValue.textContent = `$${gameState.money.toLocaleString()}`;
+    if (elements.energyValue) {
+        elements.energyValue.textContent = `${gameState.energy}/${maxEnergy}`;
+    }
     
     // Update insights display
     elements.insightsContainer.innerHTML = '';
@@ -552,16 +560,32 @@ function takeNewCase() {
     
     // Start with client meeting phase
     try {
-        startClientMeeting();
+        const success = startClientMeeting();
+        if (!success) {
+            // If startClientMeeting returns false, restore energy
+            gameState.energy += energyCost;
+            if (gameState.energy > maxEnergy) {
+                gameState.energy = maxEnergy;
+            }
+            updateUI();
+            saveGameState();
+            return;
+        }
     } catch (error) {
         console.error('Error starting client meeting:', error);
         // If there's an error, restore energy and show error message
         gameState.energy += energyCost;
+        if (gameState.energy > maxEnergy) {
+            gameState.energy = maxEnergy;
+        }
         updateUI();
         saveGameState();
         alert('An error occurred while starting the case. Please try again.');
         return;
     }
+    
+    // Save state after successful case start
+    saveGameState();
 }
 
 // Get Case Level
@@ -598,21 +622,36 @@ function startClientMeeting() {
     // Validate that we have a current case
     if (!gameState.currentCase) {
         console.error('No current case to start');
-        return;
+        alert('Error: No case selected. Please try again.');
+        return false;
     }
+    
+    console.log('Starting client meeting for case:', gameState.currentCase.title);
     
     gameState.currentCase.phase = 'client';
     updatePhaseIndicator('client');
     
-    // Hide all panels
+    // Hide all panels first
     hideAllPanels();
+    
+    // Hide case panel when showing client panel
+    if (elements.casePanel) {
+        elements.casePanel.classList.add('hidden');
+    }
     
     // Show client panel
     if (elements.clientPanel) {
         elements.clientPanel.classList.remove('hidden');
+        elements.clientPanel.style.display = 'block'; // Force display
+        console.log('Client panel should now be visible');
+    } else {
+        console.error('Client panel element not found!');
+        return false;
     }
+    
     if (elements.phaseIndicator) {
         elements.phaseIndicator.classList.remove('hidden');
+        elements.phaseIndicator.style.display = 'flex'; // Force display
     }
     
     const dialogues = [
@@ -647,6 +686,11 @@ function startClientMeeting() {
     if (elements.caseContent) {
         elements.caseContent.innerHTML = `<p>${gameState.currentCase.description}</p>`;
     }
+    
+    // Force a UI update to ensure everything is visible
+    updateUI();
+    
+    return true;
 }
 
 // Respond to Client
@@ -946,12 +990,13 @@ function updatePhaseIndicator(activePhase) {
 
 // Hide All Panels
 function hideAllPanels() {
-    elements.clientPanel.classList.add('hidden');
-    elements.investigationPanel.classList.add('hidden');
-    elements.preparationPanel.classList.add('hidden');
-    elements.courtroomPanel.classList.add('hidden');
-    elements.decisionPanel.classList.add('hidden');
-    elements.casePanel.classList.remove('hidden');
+    if (elements.clientPanel) elements.clientPanel.classList.add('hidden');
+    if (elements.investigationPanel) elements.investigationPanel.classList.add('hidden');
+    if (elements.preparationPanel) elements.preparationPanel.classList.add('hidden');
+    if (elements.courtroomPanel) elements.courtroomPanel.classList.add('hidden');
+    if (elements.decisionPanel) elements.decisionPanel.classList.add('hidden');
+    // Don't automatically show casePanel - let the calling function decide
+    // if (elements.casePanel) elements.casePanel.classList.remove('hidden');
 }
 
 // Make Decision
